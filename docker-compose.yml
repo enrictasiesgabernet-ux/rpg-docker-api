@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    container_name: rpg_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rpguser
+      POSTGRES_PASSWORD: rpgpass
+      POSTGRES_DB: rpgdb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - rpg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rpguser -d rpgdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+ 
+  backend:
+    build: ./backend
+    container_name: rpg_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://rpguser:rpgpass@db:5432/rpgdb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - rpg_network
+ 
+volumes:
+  db_data:
+ 
+networks:
+  rpg_network:
+    driver: bridge
